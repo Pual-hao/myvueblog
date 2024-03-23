@@ -41,6 +41,15 @@ public class JwtFilter extends AuthenticatingFilter {
         return new JwtToken(jwt);
     }
 
+    /*在Apache Shiro的过滤器中，onAccessDenied方法应对请求被拒绝访问的情况。
+    当这个方法返回true时，表示当前请求被允许访问，请求将继续被处理，
+    传递到下一个过滤器或者最终的请求目标。
+    它实质上告诉Shiro框架：尽管这个请求在某些条件判断下被认为被拒绝访问
+    （例如没有身份凭证或者所需的权限等），但在onAccessDenied方法内部，已经处理了这个问题，
+    所以请求应该继续进行，而不是被拒绝。
+    在你的代码中，如果请求没有附带JWT令牌（视为游客身份），
+    或者附带的JWT是有效的并且对应的用户可以成功登录，那么onAccessDenied就会返回true,
+    请求就会继续被处理。*/
     //执行过滤
     @Override
     protected boolean onAccessDenied(ServletRequest servletRequest, ServletResponse servletResponse) throws Exception {
@@ -58,7 +67,24 @@ public class JwtFilter extends AuthenticatingFilter {
                 throw new ExpiredCredentialsException("token已失效,请重新登录");
             }
 
-            //执行登录
+            //执行Subject登录  如果登录成功，框架会自动将Subject.isAuthenticated()设置为true
+            /*
+            *
+            * 这个login()方法会触发Shiro的认证流程。
+            * 如果这个流程顺利完成，那么Subject.isAuthenticated()就会被设置为true，
+            * 否则login()方法会抛出各种类型的AuthenticationException。
+            注意，让整个认证流程能够正常运行还依赖一个自定义的Realm，
+            * 这个Realm需要正确地处理JwtToken并进行认证。
+            * 所以，你还需要在你的Shiro配置文件(Configuration file)中，
+            * 将这个自定义的Realm注册进去。
+            当你的代码正确地配置了以上各项，
+            * 那么@RequiresAuthentication就会如你所期望地工作。*/
+            /* 由于前端cookie中没有存储Subject会话信息，所以每一次访问受限资源，即
+               每一次使用excuteLogin函数都会创建一个新的Subject会话信息，在使用@GetMapping("/logout")
+               接口的时候，由于有@RequiresAuthentication注解，所以先会创建一个Subject会话，然后终止掉这个会话
+               所以包括修改博客的时候subject之类的通过@RequiresAuthentication注解创建的会话信息会一直存在Redis中
+
+               */
             return executeLogin(servletRequest, servletResponse);
         }
 

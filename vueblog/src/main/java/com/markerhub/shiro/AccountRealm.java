@@ -30,7 +30,10 @@ public class AccountRealm extends AuthorizingRealm {
         return null;
     }
 
-
+    // 分析源码之后，发现在Subject.login里会调用这个函数，并且会将SimpleAuthenticationInfo这个返回值
+    // 作为Security的当前值，在调用下一次executeLogin更换里面的值之前，
+    // 使用SecurityUtils.getSubject().getPrincipal()函数返回的都是
+    // 当前返回的SimpleAuthenticationInfo里的profile
     //获取验证信息
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
@@ -52,6 +55,7 @@ public class AccountRealm extends AuthorizingRealm {
 
 
         System.out.println();
+
         return new SimpleAuthenticationInfo(profile,jwtToken.getCredentials(),this.getName());
     }
 }
